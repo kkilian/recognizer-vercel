@@ -1,118 +1,240 @@
-// iPhone-only Card Trainer - Touch events only
-class CardTrainer {
+// iPhone Card Recognition Trainer
+class RecognitionTrainer {
     constructor() {
+        // Game state
         this.deck = [];
         this.currentIndex = 0;
-        this.times = [];
-        this.startTime = 0;
-        this.isRunning = false;
-        this.isFocusMode = false;
+        this.sessionActive = false;
+        this.waitingForTap = false;
+        this.cardStartTime = 0;
+        this.sessionData = {
+            id: '',
+            date: null,
+            cards: [],
+            totalCards: 0,
+            startTime: null,
+            endTime: null
+        };
         
         // Settings
         this.cardCount = 10;
         this.selectedSuits = ['♠', '♥', '♦', '♣'];
+        this.focusMode = false;
+        this.vibrationEnabled = true;
+        
+        // Session history
+        this.sessions = [];
         
         // DOM elements
         this.views = {
-            start: document.getElementById('start-view'),
-            session: document.getElementById('session-view'),
-            results: document.getElementById('results-view')
+            training: document.getElementById('training-view'),
+            stats: document.getElementById('stats-view'),
+            history: document.getElementById('history-view'),
+            settings: document.getElementById('settings-view')
         };
         
         this.card = document.getElementById('card');
         this.cardValue = this.card.querySelector('.value');
         this.cardSuit = this.card.querySelector('.suit');
+        this.startScreen = document.getElementById('start-screen');
+        this.finishScreen = document.getElementById('finish-screen');
+        this.tapZone = document.getElementById('tap-zone');
+        this.tapFeedback = document.getElementById('tap-feedback');
         
         this.init();
+        this.loadSettings();
+        this.loadHistory();
     }
     
     init() {
         // Prevent default touch behaviors
-        document.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+        document.addEventListener('touchstart', e => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+        
         document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
         
-        // Start button
-        document.getElementById('start-btn').addEventListener('touchend', e => {
-            e.preventDefault();
-            this.vibrate(10);
-            this.startSession();
+        // Tab navigation
+        document.querySelectorAll('.tab-item').forEach(tab => {
+            tab.addEventListener('touchend', e => {
+                e.preventDefault();
+                this.switchView(tab.dataset.view);
+                this.updateTabBar(tab);
+                this.vibrate(5);
+            });
         });
         
-        // Tap zone during session
-        document.getElementById('tap-zone').addEventListener('touchend', e => {
+        // Start screen tap
+        this.startScreen.addEventListener('touchend', e => {
             e.preventDefault();
-            if (this.isRunning) {
-                this.vibrate(5);
-                this.nextCard();
+            if (!this.sessionActive) {
+                this.startSession();
+                this.vibrate(10);
             }
         });
         
-        // Restart button
-        document.getElementById('restart-btn').addEventListener('touchend', e => {
+        // Tap zone during session
+        this.tapZone.addEventListener('touchend', e => {
             e.preventDefault();
-            this.vibrate(10);
-            this.reset();
+            if (this.waitingForTap) {
+                this.showTapFeedback();
+                this.nextCard();
+                this.vibrate(5);
+            }
         });
         
-        // Settings
+        // Finish screen buttons
+        document.getElementById('new-session-btn').addEventListener('touchend', e => {
+            e.preventDefault();
+            this.reset();
+            this.vibrate(10);
+        });
+        
+        document.getElementById('view-details-btn').addEventListener('touchend', e => {
+            e.preventDefault();
+            this.switchView('stats');
+            this.updateTabBar(document.querySelector('[data-view="stats"]'));
+            this.vibrate(5);
+        });
+        
+        // Settings controls
         const slider = document.getElementById('cards-slider');
         slider.addEventListener('input', e => {
             this.cardCount = parseInt(e.target.value);
             document.getElementById('cards-count').textContent = this.cardCount;
+            this.saveSettings();
         });
         
-        // Suit selectors
-        document.querySelectorAll('.suit-btn').forEach(btn => {
+        // Suit toggles
+        document.querySelectorAll('.suit-toggle').forEach(btn => {
             btn.addEventListener('touchend', e => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.vibrate(5);
                 btn.classList.toggle('active');
                 this.updateSelectedSuits();
+                this.vibrate(5);
             });
         });
         
-        // Focus mode toggle
-        document.getElementById('focus-toggle').addEventListener('touchend', e => {
-            e.preventDefault();
-            e.stopPropagation();
+        // Switches
+        document.getElementById('focus-mode-switch').addEventListener('change', e => {
+            this.focusMode = e.target.checked;
+            document.body.classList.toggle('focus-mode', this.focusMode);
+            this.saveSettings();
             this.vibrate(10);
-            this.toggleFocusMode();
+        });
+        
+        document.getElementById('vibration-switch').addEventListener('change', e => {
+            this.vibrationEnabled = e.target.checked;
+            this.saveSettings();
+            if (this.vibrationEnabled) this.vibrate(10);
+        });
+        
+        // Export button
+        document.getElementById('export-btn').addEventListener('touchend', e => {
+            e.preventDefault();
+            this.exportData();
+            this.vibrate(10);
+        });
+        
+        // Clear data button
+        document.getElementById('clear-data-btn').addEventListener('touchend', e => {
+            e.preventDefault();
+            if (confirm('Czy na pewno chcesz usunąć całą historię?')) {
+                this.clearHistory();
+                this.vibrate(20);
+            }
+        });
+        
+        // Chart button
+        document.getElementById('chart-btn').addEventListener('touchend', e => {
+            e.preventDefault();
+            this.showChart();
+            this.vibrate(5);
+        });
+        
+        // Close chart button
+        document.getElementById('close-chart').addEventListener('touchend', e => {
+            e.preventDefault();
+            document.getElementById('chart-modal').classList.add('hidden');
+            this.vibrate(5);
         });
         
         // Swipe gestures
         this.setupSwipeGestures();
-        
-        // Load preferences
-        this.loadPreferences();
     }
     
     setupSwipeGestures() {
-        let touchStartY = 0;
         let touchStartX = 0;
+        let touchStartY = 0;
+        let currentView = 'training';
         
         document.addEventListener('touchstart', e => {
-            touchStartY = e.touches[0].clientY;
             touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
         });
         
         document.addEventListener('touchend', e => {
-            const touchEndY = e.changedTouches[0].clientY;
             const touchEndX = e.changedTouches[0].clientX;
-            const deltaY = touchStartY - touchEndY;
+            const touchEndY = e.changedTouches[0].clientY;
             const deltaX = touchStartX - touchEndX;
+            const deltaY = touchStartY - touchEndY;
             
-            // Swipe down to exit focus mode
-            if (Math.abs(deltaY) > 100 && deltaY < 0 && this.isFocusMode) {
-                this.toggleFocusMode();
-                this.vibrate(10);
+            // Horizontal swipe for tab navigation
+            if (Math.abs(deltaX) > 100 && Math.abs(deltaX) > Math.abs(deltaY)) {
+                const tabs = ['training', 'stats', 'history', 'settings'];
+                const currentIndex = tabs.indexOf(this.getCurrentView());
+                
+                if (deltaX > 0 && currentIndex < tabs.length - 1) {
+                    // Swipe left - next tab
+                    this.switchView(tabs[currentIndex + 1]);
+                    this.updateTabBar(document.querySelector(`[data-view="${tabs[currentIndex + 1]}"]`));
+                    this.vibrate(5);
+                } else if (deltaX < 0 && currentIndex > 0) {
+                    // Swipe right - previous tab
+                    this.switchView(tabs[currentIndex - 1]);
+                    this.updateTabBar(document.querySelector(`[data-view="${tabs[currentIndex - 1]}"]`));
+                    this.vibrate(5);
+                }
+            }
+            
+            // Swipe down to dismiss modal
+            if (deltaY < -100 && !document.getElementById('chart-modal').classList.contains('hidden')) {
+                document.getElementById('chart-modal').classList.add('hidden');
+                this.vibrate(5);
             }
         });
     }
     
+    getCurrentView() {
+        for (const [key, view] of Object.entries(this.views)) {
+            if (view.classList.contains('active')) return key;
+        }
+        return 'training';
+    }
+    
+    switchView(viewName) {
+        Object.values(this.views).forEach(v => v.classList.remove('active'));
+        this.views[viewName].classList.add('active');
+    }
+    
+    updateTabBar(activeTab) {
+        document.querySelectorAll('.tab-item').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        activeTab.classList.add('active');
+    }
+    
+    showTapFeedback() {
+        this.tapFeedback.classList.add('active');
+        setTimeout(() => {
+            this.tapFeedback.classList.remove('active');
+        }, 600);
+    }
+    
     updateSelectedSuits() {
         this.selectedSuits = [];
-        document.querySelectorAll('.suit-btn.active').forEach(btn => {
+        document.querySelectorAll('.suit-toggle.active').forEach(btn => {
             this.selectedSuits.push(btn.dataset.suit);
         });
         
@@ -125,6 +247,8 @@ class CardTrainer {
             slider.value = maxCards;
             document.getElementById('cards-count').textContent = maxCards;
         }
+        
+        this.saveSettings();
     }
     
     createDeck() {
@@ -155,17 +279,25 @@ class CardTrainer {
         
         this.createDeck();
         this.currentIndex = 0;
-        this.times = [];
-        this.isRunning = true;
+        this.sessionActive = true;
+        this.waitingForTap = false;
         
-        // Switch view
-        this.showView('session');
+        // Initialize session data
+        this.sessionData = {
+            id: Date.now().toString(),
+            date: new Date(),
+            cards: [],
+            totalCards: this.deck.length,
+            startTime: performance.now(),
+            endTime: null
+        };
+        
+        // Hide start screen
+        this.startScreen.classList.add('hidden');
         
         // Show first card
         this.showCard();
-        this.startTimer();
-        
-        // Update counter
+        this.updateProgress();
         this.updateCounter();
     }
     
@@ -177,117 +309,394 @@ class CardTrainer {
         this.cardSuit.className = 'suit ' + (card.suit === '♥' || card.suit === '♦' ? 'red' : 'black');
         
         this.card.classList.remove('hidden');
-        this.card.classList.add('flip-in');
         
-        setTimeout(() => {
-            this.card.classList.remove('flip-in');
-        }, 500);
+        // Start timing
+        this.cardStartTime = performance.now();
+        this.waitingForTap = true;
     }
     
     nextCard() {
-        if (!this.isRunning) return;
+        if (!this.sessionActive || !this.waitingForTap) return;
         
-        // Record time
-        const time = this.stopTimer();
-        this.times.push(time);
+        // Record time for current card
+        const time = (performance.now() - this.cardStartTime) / 1000;
+        const card = this.deck[this.currentIndex];
+        
+        this.sessionData.cards.push({
+            card: `${card.value}${card.suit}`,
+            value: card.value,
+            suit: card.suit,
+            time: time,
+            timestamp: new Date()
+        });
+        
+        // Update current session stats
+        this.updateSessionStats();
         
         // Move to next card
         this.currentIndex++;
+        this.waitingForTap = false;
         
         if (this.currentIndex >= this.deck.length) {
             this.endSession();
         } else {
-            this.showCard();
-            this.startTimer();
-            this.updateCounter();
+            // Brief pause before showing next card
+            this.card.classList.add('hidden');
+            setTimeout(() => {
+                this.showCard();
+                this.updateProgress();
+                this.updateCounter();
+                this.updateTimer(time);
+            }, 300);
         }
     }
     
-    startTimer() {
-        this.startTime = performance.now();
-    }
-    
-    stopTimer() {
-        const elapsed = (performance.now() - this.startTime) / 1000;
-        document.getElementById('timer').textContent = elapsed.toFixed(2) + 's';
-        return elapsed;
+    updateProgress() {
+        const progress = (this.currentIndex / this.deck.length) * 100;
+        document.getElementById('progress').style.width = progress + '%';
     }
     
     updateCounter() {
-        document.getElementById('counter').textContent = `${this.currentIndex + 1} / ${this.deck.length}`;
+        document.getElementById('card-counter').textContent = 
+            `${this.currentIndex + 1}/${this.deck.length}`;
     }
     
-    endSession() {
-        this.isRunning = false;
-        this.card.classList.add('hidden');
+    updateTimer(time) {
+        document.getElementById('timer').textContent = time.toFixed(2) + 's';
+    }
+    
+    updateSessionStats() {
+        const times = this.sessionData.cards.map(c => c.time);
+        if (times.length === 0) return;
         
-        // Calculate stats
-        const avg = this.times.reduce((a, b) => a + b, 0) / this.times.length;
-        const best = Math.min(...this.times);
-        const worst = Math.max(...this.times);
+        const total = times.reduce((a, b) => a + b, 0);
+        const avg = total / times.length;
+        const best = Math.min(...times);
+        const worst = Math.max(...times);
         
-        // Display results
+        // Update stats view
+        document.getElementById('total-time').textContent = total.toFixed(2) + 's';
         document.getElementById('avg-time').textContent = avg.toFixed(2) + 's';
         document.getElementById('best-time').textContent = best.toFixed(2) + 's';
         document.getElementById('worst-time').textContent = worst.toFixed(2) + 's';
         
-        this.showView('results');
+        // Update cards list
+        this.updateCardsList();
+    }
+    
+    updateCardsList() {
+        const list = document.getElementById('cards-list');
+        list.innerHTML = '';
         
-        // Save to history
-        this.saveSession({
-            date: new Date(),
-            times: this.times,
-            avg: avg,
-            cardCount: this.deck.length
+        this.sessionData.cards.forEach(cardData => {
+            const item = document.createElement('div');
+            item.className = 'card-item';
+            
+            const name = document.createElement('span');
+            name.className = 'card-name';
+            name.innerHTML = `<span class="${cardData.suit === '♥' || cardData.suit === '♦' ? 'red' : 'black'}">${cardData.card}</span>`;
+            
+            const time = document.createElement('span');
+            time.className = 'card-time';
+            if (cardData.time > 2) {
+                time.className += ' time-very-slow';
+            } else if (cardData.time > 1) {
+                time.className += ' time-slow';
+            }
+            time.textContent = cardData.time.toFixed(2) + 's';
+            
+            item.appendChild(name);
+            item.appendChild(time);
+            list.appendChild(item);
         });
+    }
+    
+    endSession() {
+        this.sessionActive = false;
+        this.sessionData.endTime = performance.now();
+        this.card.classList.add('hidden');
         
+        // Calculate final stats
+        const times = this.sessionData.cards.map(c => c.time);
+        const avg = times.reduce((a, b) => a + b, 0) / times.length;
+        const best = Math.min(...times);
+        const worst = Math.max(...times);
+        
+        // Display summary
+        document.getElementById('summary-avg').textContent = avg.toFixed(2) + 's';
+        document.getElementById('summary-best').textContent = best.toFixed(2) + 's';
+        document.getElementById('summary-worst').textContent = worst.toFixed(2) + 's';
+        
+        this.finishScreen.classList.remove('hidden');
+        
+        // Save session
+        this.saveSession();
+        this.updateHistory();
+        
+        // Long vibration for completion
         this.vibrate([100, 50, 100]);
     }
     
     reset() {
-        this.isRunning = false;
+        this.sessionActive = false;
         this.currentIndex = 0;
-        this.times = [];
+        this.waitingForTap = false;
+        this.sessionData = {
+            id: '',
+            date: null,
+            cards: [],
+            totalCards: 0,
+            startTime: null,
+            endTime: null
+        };
+        
         this.card.classList.add('hidden');
-        this.showView('start');
+        this.finishScreen.classList.add('hidden');
+        this.startScreen.classList.remove('hidden');
+        
+        document.getElementById('progress').style.width = '0%';
+        document.getElementById('card-counter').textContent = '0/0';
+        document.getElementById('timer').textContent = '0.00s';
     }
     
-    showView(viewName) {
-        Object.values(this.views).forEach(v => v.classList.add('hidden'));
-        this.views[viewName].classList.remove('hidden');
+    saveSession() {
+        this.sessions.unshift(this.sessionData);
+        // Keep only last 50 sessions
+        this.sessions = this.sessions.slice(0, 50);
+        localStorage.setItem('recognition_sessions', JSON.stringify(this.sessions));
     }
     
-    toggleFocusMode() {
-        this.isFocusMode = !this.isFocusMode;
-        document.body.classList.toggle('focus-mode');
-        localStorage.setItem('focusMode', this.isFocusMode);
-    }
-    
-    vibrate(pattern) {
-        if ('vibrate' in navigator) {
-            navigator.vibrate(pattern);
+    loadHistory() {
+        const saved = localStorage.getItem('recognition_sessions');
+        if (saved) {
+            this.sessions = JSON.parse(saved);
+            this.updateHistory();
         }
     }
     
-    saveSession(data) {
-        let history = JSON.parse(localStorage.getItem('sessions') || '[]');
-        history.unshift(data);
-        history = history.slice(0, 20); // Keep last 20
-        localStorage.setItem('sessions', JSON.stringify(history));
+    updateHistory() {
+        const list = document.getElementById('sessions-list');
+        const noData = document.getElementById('no-history');
+        
+        if (this.sessions.length === 0) {
+            list.style.display = 'none';
+            noData.style.display = 'flex';
+            return;
+        }
+        
+        list.style.display = 'block';
+        noData.style.display = 'none';
+        list.innerHTML = '';
+        
+        this.sessions.forEach((session, index) => {
+            const item = document.createElement('div');
+            item.className = 'session-item';
+            
+            const times = session.cards.map(c => c.time);
+            const avg = times.reduce((a, b) => a + b, 0) / times.length;
+            
+            const date = new Date(session.date);
+            const dateStr = date.toLocaleDateString('pl-PL', { 
+                day: 'numeric', 
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            item.innerHTML = `
+                <div class="session-header">
+                    <span>Sesja ${this.sessions.length - index}</span>
+                    <span class="session-date">${dateStr}</span>
+                </div>
+                <div class="session-stats">
+                    <div>
+                        <span class="stat-label">Karty</span>
+                        <span class="stat-value">${session.totalCards}</span>
+                    </div>
+                    <div>
+                        <span class="stat-label">Średni</span>
+                        <span class="stat-value">${avg.toFixed(2)}s</span>
+                    </div>
+                    <div>
+                        <span class="stat-label">Najlepszy</span>
+                        <span class="stat-value">${Math.min(...times).toFixed(2)}s</span>
+                    </div>
+                </div>
+            `;
+            
+            list.appendChild(item);
+        });
     }
     
-    loadPreferences() {
-        const focusMode = localStorage.getItem('focusMode') === 'true';
-        if (focusMode) {
-            this.isFocusMode = true;
-            document.body.classList.add('focus-mode');
+    clearHistory() {
+        this.sessions = [];
+        localStorage.removeItem('recognition_sessions');
+        this.updateHistory();
+    }
+    
+    showChart() {
+        const modal = document.getElementById('chart-modal');
+        modal.classList.remove('hidden');
+        
+        // Prepare data for chart
+        const labels = [];
+        const data = [];
+        
+        // Show last 20 sessions
+        const sessionsToShow = this.sessions.slice(0, 20).reverse();
+        
+        sessionsToShow.forEach((session, index) => {
+            labels.push(`Sesja ${index + 1}`);
+            const times = session.cards.map(c => c.time);
+            const avg = times.reduce((a, b) => a + b, 0) / times.length;
+            data.push(avg);
+        });
+        
+        // Create or update chart
+        const ctx = document.getElementById('progress-chart').getContext('2d');
+        
+        if (this.chart) {
+            this.chart.destroy();
+        }
+        
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Średni czas (s)',
+                    data: data,
+                    borderColor: '#007aff',
+                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#fff'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#fff'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    async exportData() {
+        const exportData = {
+            sessions: this.sessions,
+            settings: {
+                cardCount: this.cardCount,
+                selectedSuits: this.selectedSuits,
+                focusMode: this.focusMode
+            },
+            exportDate: new Date().toISOString()
+        };
+        
+        const json = JSON.stringify(exportData, null, 2);
+        
+        // Try Web Share API first (for iOS)
+        if (navigator.share) {
+            try {
+                const file = new File([json], 'card-trainer-data.json', { type: 'application/json' });
+                await navigator.share({
+                    title: 'Card Trainer Data',
+                    files: [file]
+                });
+            } catch (err) {
+                // Fallback to clipboard
+                this.copyToClipboard(json);
+            }
+        } else {
+            // Fallback to clipboard
+            this.copyToClipboard(json);
+        }
+    }
+    
+    copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        alert('Dane skopiowane do schowka!');
+    }
+    
+    saveSettings() {
+        const settings = {
+            cardCount: this.cardCount,
+            selectedSuits: this.selectedSuits,
+            focusMode: this.focusMode,
+            vibrationEnabled: this.vibrationEnabled
+        };
+        localStorage.setItem('recognition_settings', JSON.stringify(settings));
+    }
+    
+    loadSettings() {
+        const saved = localStorage.getItem('recognition_settings');
+        if (saved) {
+            const settings = JSON.parse(saved);
+            
+            this.cardCount = settings.cardCount || 10;
+            this.selectedSuits = settings.selectedSuits || ['♠', '♥', '♦', '♣'];
+            this.focusMode = settings.focusMode || false;
+            this.vibrationEnabled = settings.vibrationEnabled !== false;
+            
+            // Update UI
+            document.getElementById('cards-slider').value = this.cardCount;
+            document.getElementById('cards-count').textContent = this.cardCount;
+            
+            document.querySelectorAll('.suit-toggle').forEach(btn => {
+                if (this.selectedSuits.includes(btn.dataset.suit)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            document.getElementById('focus-mode-switch').checked = this.focusMode;
+            document.getElementById('vibration-switch').checked = this.vibrationEnabled;
+            
+            if (this.focusMode) {
+                document.body.classList.add('focus-mode');
+            }
+        }
+    }
+    
+    vibrate(pattern) {
+        if (this.vibrationEnabled && 'vibrate' in navigator) {
+            navigator.vibrate(pattern);
         }
     }
 }
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    new CardTrainer();
+    new RecognitionTrainer();
     
     // Register service worker
     if ('serviceWorker' in navigator) {
