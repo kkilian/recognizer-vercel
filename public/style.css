@@ -849,6 +849,8 @@ kbd {
 /* Mobile/Desktop specific content */
 .mobile-instruction { display: none; }
 .desktop-instruction { display: block; }
+.mobile-only { display: none; }
+.desktop-only { display: block; }
 
 /* TAP button for mobile */
 .tap-button {
@@ -878,6 +880,8 @@ kbd {
     
     .mobile-instruction { display: block; }
     .desktop-instruction { display: none; }
+    .mobile-only { display: block; }
+    .desktop-only { display: none; }
     .tap-button { display: block; }
     
     h1 {
