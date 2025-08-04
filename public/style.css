@@ -952,6 +952,41 @@ kbd {
     cursor: pointer;
 }
 
+/* Exit focus mode button */
+.exit-focus-btn {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    cursor: pointer;
+    z-index: 10000;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.exit-focus-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.exit-focus-btn:active {
+    transform: scale(0.95);
+}
+
+/* Show exit button only in focus mode */
+body.focus-mode .exit-focus-btn {
+    display: flex;
+}
+
 /* Focus mode active styles */
 body.focus-mode {
     background-color: #6b6b6b;

@@ -1138,6 +1138,7 @@ window.deleteSession = deleteSession;
 
 // Focus mode functionality
 const focusModeToggle = document.getElementById('focus-mode-toggle');
+const exitFocusBtn = document.getElementById('exit-focus-btn');
 let isFocusMode = false;
 
 function toggleFocusMode() {
@@ -1165,6 +1166,22 @@ function loadFocusModePreference() {
 }
 
 focusModeToggle.addEventListener('change', toggleFocusMode);
+
+// Exit focus mode button
+if (exitFocusBtn) {
+    exitFocusBtn.addEventListener('click', () => {
+        focusModeToggle.checked = false;
+        toggleFocusMode();
+    });
+    
+    // Also allow touch for mobile
+    exitFocusBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        focusModeToggle.checked = false;
+        toggleFocusMode();
+    });
+}
 
 // Initialize
 updateMaxCards();
