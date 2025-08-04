@@ -3,227 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Card Recognition Trainer</title>
+    <title>Card Trainer</title>
     
-    <!-- iOS Meta Tags -->
+    <!-- iOS optimized -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Card Trainer">
+    <meta name="apple-mobile-web-app-title" content="Cards">
     <meta name="format-detection" content="telephone=no">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="theme-color" content="#000000">
     
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="app.css">
 </head>
 <body>
-    <!-- Exit focus mode button -->
-    <button id="exit-focus-btn" class="exit-focus-btn" aria-label="Wyjdź z trybu skupienia">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-    </button>
-    
-    <div class="app-wrapper">
-        <div class="main-container">
-            <h1>Trener Szybkiego Rozpoznawania Kart</h1>
-            
-            
-            <div class="card-container">
-                <div id="card" class="card hidden">
-                    <div class="card-inner">
-                        <span id="card-value"></span>
-                        <span id="card-suit"></span>
-                    </div>
-                </div>
-                
-                <div id="start-screen" class="start-screen">
-                    <h2>Przygotuj się!</h2>
-                    <p class="mobile-instruction">Dotknij aby rozpocząć</p>
-                    <p class="desktop-instruction">Naciśnij <strong>SPACJĘ</strong> aby rozpocząć</p>
-                    <button id="start-tap-btn" class="tap-button">TAP TO START</button>
-                    <p class="instructions mobile-instruction">Gdy pojawi się karta, dotknij ekranu aby przejść do następnej</p>
-                    <p class="instructions desktop-instruction">Gdy pojawi się karta, naciśnij <strong>SPACJĘ</strong> aby przejść do następnej</p>
-                </div>
-                
-                <div id="finish-screen" class="finish-screen hidden">
-                    <h2>Sesja zakończona!</h2>
-                    <div class="final-stats">
-                        <p>Łączny czas: <span id="final-total">0.00</span>s</p>
-                        <p>Średni czas: <span id="final-average">0.00</span>s</p>
-                        <p>Najlepszy czas: <span id="final-best">0.00</span>s</p>
-                        <p>Najgorszy czas: <span id="final-worst">0.00</span>s</p>
-                    </div>
-                    <button id="show-session-chart-btn" class="show-chart-btn">Pokaż wykres</button>
-                    <button id="export-btn" class="export-btn">Eksportuj wyniki</button>
-                    <button id="restart-btn" class="restart-btn">Nowa sesja</button>
-                </div>
-            </div>
-            
-            <div class="progress-container">
-                <div class="progress-bar">
-                    <div id="progress-fill" class="progress-fill"></div>
-                </div>
-            </div>
-            
-            <div class="controls">
-                <div class="control-group">
-                    <label for="cards-count">Liczba kart: <span id="cards-count-value">10</span></label>
-                    <input type="range" id="cards-count" min="1" max="52" value="10">
-                </div>
-                
-                <div class="control-group suits-selection">
-                    <label>Wybierz kolory kart:</label>
-                    <div class="suits-checkboxes">
-                        <label class="suit-checkbox">
-                            <input type="checkbox" id="spades" value="♠" checked>
-                            <span class="suit-label black">♠ Pik</span>
-                        </label>
-                        <label class="suit-checkbox">
-                            <input type="checkbox" id="hearts" value="♥" checked>
-                            <span class="suit-label red">♥ Kier</span>
-                        </label>
-                        <label class="suit-checkbox">
-                            <input type="checkbox" id="diamonds" value="♦" checked>
-                            <span class="suit-label red">♦ Karo</span>
-                        </label>
-                        <label class="suit-checkbox">
-                            <input type="checkbox" id="clubs" value="♣" checked>
-                            <span class="suit-label black">♣ Trefl</span>
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="info">
-                    <p>Karta: <span id="current-card-number">0</span> / <span id="total-cards">10</span></p>
-                </div>
-                
-                <div class="control-group focus-mode-control">
-                    <label for="focus-mode-toggle" class="focus-mode-label">
-                        <input type="checkbox" id="focus-mode-toggle">
-                        <span>Tryb skupienia</span>
-                    </label>
-                </div>
+    <div id="app">
+        <!-- Main card display -->
+        <div id="card-area" class="card-area">
+            <div id="card" class="card hidden">
+                <span class="value"></span>
+                <span class="suit"></span>
             </div>
         </div>
         
-        <!-- Panel statystyk -->
-        <div class="stats-panel">
-            <div class="panel-tabs">
-                <button class="tab-button active" data-tab="current">Bieżąca sesja</button>
-                <button class="tab-button" data-tab="history">Historia</button>
+        <!-- Control area -->
+        <div id="control-area" class="control-area">
+            <!-- Start screen -->
+            <div id="start-view" class="view">
+                <h1>Card Trainer</h1>
+                <div class="settings">
+                    <div class="setting-row">
+                        <label>Karty: <span id="cards-count">10</span></label>
+                        <input type="range" id="cards-slider" min="1" max="52" value="10">
+                    </div>
+                    <div class="suits-selector">
+                        <button class="suit-btn active" data-suit="♠">♠</button>
+                        <button class="suit-btn active" data-suit="♥">♥</button>
+                        <button class="suit-btn active" data-suit="♦">♦</button>
+                        <button class="suit-btn active" data-suit="♣">♣</button>
+                    </div>
+                </div>
+                <button id="start-btn" class="main-btn pulse">
+                    <span class="btn-text">START</span>
+                    <span class="btn-hint">Tap to begin</span>
+                </button>
             </div>
             
-            <div id="current-tab" class="tab-content active">
-                <h2>Statystyki bieżącej sesji</h2>
-                
-                <div class="current-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Łączny czas:</span>
-                        <span class="stat-value" id="total-time">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Średni czas:</span>
-                        <span class="stat-value" id="average-time">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Najlepszy czas:</span>
-                        <span class="stat-value" id="best-time">-</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Najgorszy czas:</span>
-                        <span class="stat-value" id="worst-time">-</span>
-                    </div>
+            <!-- Session view -->
+            <div id="session-view" class="view hidden">
+                <div class="session-info">
+                    <span id="counter">1 / 10</span>
+                    <span id="timer">0.00s</span>
                 </div>
-                
-                <div class="cards-list-container">
-                    <h3>Rozpoznane karty:</h3>
-                    <div id="cards-list" class="cards-list">
-                        <!-- Lista kart będzie generowana przez JavaScript -->
-                    </div>
-                </div>
-                
-                <div class="keyboard-hints desktop-only">
-                    <h3>Skróty klawiszowe:</h3>
-                    <p><kbd>SPACJA</kbd> - Następna karta / Start</p>
-                    <p><kbd>ESC</kbd> - Przerwij sesję</p>
-                </div>
-                
-                <div class="touch-hints mobile-only">
-                    <h3>Sterowanie:</h3>
-                    <p>👆 Dotknij ekranu - Następna karta</p>
-                    <p>📱 Dotknij przycisku TAP - Start</p>
+                <div class="tap-zone" id="tap-zone">
+                    <div class="tap-hint">👆 TAP</div>
                 </div>
             </div>
             
-            <div id="history-tab" class="tab-content">
-                <h2>Historia sesji</h2>
-                
-                <div class="history-controls">
-                    <button id="export-all-btn" class="history-btn">Eksportuj wszystkie</button>
-                    <div class="export-dropdown-container">
-                        <button id="export-last-btn" class="history-btn">Eksportuj ostatnie ▼</button>
-                        <div id="export-dropdown" class="export-dropdown hidden">
-                            <button class="export-option" onclick="exportLastSessions(5)">Ostatnie 5 sesji</button>
-                            <button class="export-option" onclick="exportLastSessions(10)">Ostatnie 10 sesji</button>
-                            <button class="export-option" onclick="exportLastSessions(15)">Ostatnie 15 sesji</button>
-                            <button class="export-option" onclick="exportLastSessions(20)">Ostatnie 20 sesji</button>
-                        </div>
+            <!-- Results view -->
+            <div id="results-view" class="view hidden">
+                <h2>Wyniki</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-label">Średni czas</span>
+                        <span class="stat-value" id="avg-time">0.00s</span>
                     </div>
-                    <button id="show-chart-btn" class="history-btn">Pokaż wykres postępu</button>
-                    <button id="reset-history-btn" class="history-btn danger">Resetuj historię</button>
-                </div>
-                
-                <div id="sessions-history" class="sessions-history">
-                    <!-- Historia sesji będzie generowana przez JavaScript -->
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal for progress chart -->
-    <div id="chart-modal" class="chart-modal hidden">
-        <div class="chart-modal-content">
-            <div class="chart-modal-header">
-                <h2>Postęp w rozpoznawaniu kart - średni czas na kartę w każdej sesji</h2>
-                <div class="chart-controls">
-                    <label class="chart-checkbox">
-                        <input type="checkbox" id="full-deck-filter">
-                        <span>Pokaż tylko pełne talie (52 karty)</span>
-                    </label>
-                    <div class="session-length-filter">
-                        <label>Sesje od <span id="session-length-min-value">1</span> do <span id="session-length-max-value">52</span> kart</label>
-                        <div class="range-sliders">
-                            <input type="range" id="session-length-min-slider" min="1" max="52" value="1" class="min-slider">
-                            <input type="range" id="session-length-max-slider" min="1" max="52" value="52" class="max-slider">
-                        </div>
+                    <div class="stat">
+                        <span class="stat-label">Najlepszy</span>
+                        <span class="stat-value" id="best-time">0.00s</span>
                     </div>
-                    <button id="close-chart-btn" class="close-chart-btn">&times;</button>
+                    <div class="stat">
+                        <span class="stat-label">Najgorszy</span>
+                        <span class="stat-value" id="worst-time">0.00s</span>
+                    </div>
                 </div>
-            </div>
-            <div class="chart-container">
-                <canvas id="progress-chart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal for session chart -->
-    <div id="session-chart-modal" class="chart-modal hidden">
-        <div class="chart-modal-content">
-            <div class="chart-modal-header">
-                <h2>Czas rozpoznania każdej karty</h2>
-                <button id="close-session-chart-btn" class="close-chart-btn">&times;</button>
-            </div>
-            <div class="chart-container">
-                <canvas id="session-chart"></canvas>
+                <button id="restart-btn" class="main-btn">
+                    <span class="btn-text">JESZCZE RAZ</span>
+                </button>
             </div>
         </div>
+        
+        <!-- Focus mode toggle -->
+        <button id="focus-toggle" class="focus-toggle">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 5c-7 0-10 7-10 7s3 7 10 7 10-7 10-7-3-7-10-7zm0 12c-2.8 0-5-2.2-5-5s2.2-5 5-5 5 2.2 5 5-2.2 5-5 5z"/>
+            </svg>
+        </button>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="script.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
