@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Recognition Trainer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-wrapper">
+        <div class="main-container">
+            <h1>Trener Szybkiego Rozpoznawania Kart</h1>
+            
+            
+            <div class="card-container">
+                <div id="card" class="card hidden">
+                    <div class="card-inner">
+                        <span id="card-value"></span>
+                        <span id="card-suit"></span>
+                    </div>
+                </div>
+                
+                <div id="start-screen" class="start-screen">
+                    <h2>Przygotuj się!</h2>
+                    <p>Naciśnij <strong>SPACJĘ</strong> aby rozpocząć</p>
+                    <p class="instructions">Gdy pojawi się karta, rozpoznaj ją i naciśnij <strong>SPACJĘ</strong> aby przejść do następnej</p>
+                </div>
+                
+                <div id="finish-screen" class="finish-screen hidden">
+                    <h2>Sesja zakończona!</h2>
+                    <div class="final-stats">
+                        <p>Łączny czas: <span id="final-total">0.00</span>s</p>
+                        <p>Średni czas: <span id="final-average">0.00</span>s</p>
+                        <p>Najlepszy czas: <span id="final-best">0.00</span>s</p>
+                        <p>Najgorszy czas: <span id="final-worst">0.00</span>s</p>
+                    </div>
+                    <button id="show-session-chart-btn" class="show-chart-btn">Pokaż wykres</button>
+                    <button id="export-btn" class="export-btn">Eksportuj wyniki</button>
+                    <button id="restart-btn" class="restart-btn">Nowa sesja</button>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <label for="cards-count">Liczba kart: <span id="cards-count-value">10</span></label>
+                    <input type="range" id="cards-count" min="1" max="52" value="10">
+                </div>
+                
+                <div class="control-group suits-selection">
+                    <label>Wybierz kolory kart:</label>
+                    <div class="suits-checkboxes">
+                        <label class="suit-checkbox">
+                            <input type="checkbox" id="spades" value="♠" checked>
+                            <span class="suit-label black">♠ Pik</span>
+                        </label>
+                        <label class="suit-checkbox">
+                            <input type="checkbox" id="hearts" value="♥" checked>
+                            <span class="suit-label red">♥ Kier</span>
+                        </label>
+                        <label class="suit-checkbox">
+                            <input type="checkbox" id="diamonds" value="♦" checked>
+                            <span class="suit-label red">♦ Karo</span>
+                        </label>
+                        <label class="suit-checkbox">
+                            <input type="checkbox" id="clubs" value="♣" checked>
+                            <span class="suit-label black">♣ Trefl</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="info">
+                    <p>Karta: <span id="current-card-number">0</span> / <span id="total-cards">10</span></p>
+                </div>
+                
+                <div class="control-group focus-mode-control">
+                    <label for="focus-mode-toggle" class="focus-mode-label">
+                        <input type="checkbox" id="focus-mode-toggle">
+                        <span>Tryb skupienia</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Panel statystyk -->
+        <div class="stats-panel">
+            <div class="panel-tabs">
+                <button class="tab-button active" data-tab="current">Bieżąca sesja</button>
+                <button class="tab-button" data-tab="history">Historia</button>
+            </div>
+            
+            <div id="current-tab" class="tab-content active">
+                <h2>Statystyki bieżącej sesji</h2>
+                
+                <div class="current-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Łączny czas:</span>
+                        <span class="stat-value" id="total-time">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Średni czas:</span>
+                        <span class="stat-value" id="average-time">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Najlepszy czas:</span>
+                        <span class="stat-value" id="best-time">-</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Najgorszy czas:</span>
+                        <span class="stat-value" id="worst-time">-</span>
+                    </div>
+                </div>
+                
+                <div class="cards-list-container">
+                    <h3>Rozpoznane karty:</h3>
+                    <div id="cards-list" class="cards-list">
+                        <!-- Lista kart będzie generowana przez JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="keyboard-hints">
+                    <h3>Skróty klawiszowe:</h3>
+                    <p><kbd>SPACJA</kbd> - Następna karta / Start</p>
+                    <p><kbd>ESC</kbd> - Przerwij sesję</p>
+                </div>
+            </div>
+            
+            <div id="history-tab" class="tab-content">
+                <h2>Historia sesji</h2>
+                
+                <div class="history-controls">
+                    <button id="export-all-btn" class="history-btn">Eksportuj wszystkie</button>
+                    <div class="export-dropdown-container">
+                        <button id="export-last-btn" class="history-btn">Eksportuj ostatnie ▼</button>
+                        <div id="export-dropdown" class="export-dropdown hidden">
+                            <button class="export-option" onclick="exportLastSessions(5)">Ostatnie 5 sesji</button>
+                            <button class="export-option" onclick="exportLastSessions(10)">Ostatnie 10 sesji</button>
+                            <button class="export-option" onclick="exportLastSessions(15)">Ostatnie 15 sesji</button>
+                            <button class="export-option" onclick="exportLastSessions(20)">Ostatnie 20 sesji</button>
+                        </div>
+                    </div>
+                    <button id="show-chart-btn" class="history-btn">Pokaż wykres postępu</button>
+                    <button id="reset-history-btn" class="history-btn danger">Resetuj historię</button>
+                </div>
+                
+                <div id="sessions-history" class="sessions-history">
+                    <!-- Historia sesji będzie generowana przez JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for progress chart -->
+    <div id="chart-modal" class="chart-modal hidden">
+        <div class="chart-modal-content">
+            <div class="chart-modal-header">
+                <h2>Postęp w rozpoznawaniu kart - średni czas na kartę w każdej sesji</h2>
+                <div class="chart-controls">
+                    <label class="chart-checkbox">
+                        <input type="checkbox" id="full-deck-filter">
+                        <span>Pokaż tylko pełne talie (52 karty)</span>
+                    </label>
+                    <div class="session-length-filter">
+                        <label>Sesje od <span id="session-length-min-value">1</span> do <span id="session-length-max-value">52</span> kart</label>
+                        <div class="range-sliders">
+                            <input type="range" id="session-length-min-slider" min="1" max="52" value="1" class="min-slider">
+                            <input type="range" id="session-length-max-slider" min="1" max="52" value="52" class="max-slider">
+                        </div>
+                    </div>
+                    <button id="close-chart-btn" class="close-chart-btn">&times;</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="progress-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for session chart -->
+    <div id="session-chart-modal" class="chart-modal hidden">
+        <div class="chart-modal-content">
+            <div class="chart-modal-header">
+                <h2>Czas rozpoznania każdej karty</h2>
+                <button id="close-session-chart-btn" class="close-chart-btn">&times;</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="session-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

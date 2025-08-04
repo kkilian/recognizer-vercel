@@ -1,0 +1,22 @@
+{
+  "name": "card-recognizer",
+  "version": "1.0.0",
+  "description": "Card Recognition Trainer - Speed training app for memorizing playing cards",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build required for static site'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "cards",
+    "memory",
+    "training",
+    "recognition",
+    "speed"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  }
+}
