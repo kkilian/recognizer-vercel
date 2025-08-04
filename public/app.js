@@ -104,6 +104,13 @@ class RecognitionTrainer {
             this.vibrate(5);
         });
         
+        document.getElementById('view-history-btn').addEventListener('touchend', e => {
+            e.preventDefault();
+            this.switchView('history');
+            this.updateTabBar(document.querySelector('[data-view="history"]'));
+            this.vibrate(5);
+        });
+        
         // Settings controls
         const slider = document.getElementById('cards-slider');
         slider.addEventListener('input', e => {
