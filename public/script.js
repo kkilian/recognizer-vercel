@@ -390,21 +390,25 @@ function updateMaxCards() {
     }
 }
 
+// Helper function for main action
+function performMainAction() {
+    if (!isSessionActive && !finishScreen.classList.contains('hidden')) {
+        restart();
+    } else if (!isSessionActive) {
+        startSession();
+    } else if (isWaitingForCard) {
+        const elapsed = stopTimer();
+        const currentCard = deck[currentCardIndex];
+        recordCardTime(currentCard, elapsed);
+        nextCard();
+    }
+}
+
 // Event listeners
 document.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
         e.preventDefault();
-        
-        if (!isSessionActive && !finishScreen.classList.contains('hidden')) {
-            restart();
-        } else if (!isSessionActive) {
-            startSession();
-        } else if (isWaitingForCard) {
-            const elapsed = stopTimer();
-            const currentCard = deck[currentCardIndex];
-            recordCardTime(currentCard, elapsed);
-            nextCard();
-        }
+        performMainAction();
     } else if (e.code === 'Escape') {
         if (isFocusMode && !isSessionActive) {
             // Exit focus mode when not in session
@@ -416,6 +420,37 @@ document.addEventListener('keydown', (e) => {
         }
     }
 });
+
+// Touch event support for mobile
+let touchStartTime = 0;
+document.addEventListener('touchstart', (e) => {
+    touchStartTime = Date.now();
+    // Prevent double-tap zoom
+    e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchend', (e) => {
+    const touchDuration = Date.now() - touchStartTime;
+    // Only respond to quick taps (not long presses)
+    if (touchDuration < 500) {
+        performMainAction();
+        // Haptic feedback if available
+        if (navigator.vibrate) {
+            navigator.vibrate(10);
+        }
+    }
+    e.preventDefault();
+}, { passive: false });
+
+// Start button for mobile
+const startTapBtn = document.getElementById('start-tap-btn');
+if (startTapBtn) {
+    startTapBtn.addEventListener('click', performMainAction);
+    startTapBtn.addEventListener('touchend', (e) => {
+        e.stopPropagation();
+        performMainAction();
+    });
+}
 
 cardsCountSlider.addEventListener('input', (e) => {
     cardsCountValue.textContent = e.target.value;
@@ -1135,6 +1170,24 @@ focusModeToggle.addEventListener('change', toggleFocusMode);
 updateMaxCards();
 loadSessions();
 loadFocusModePreference();
+
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+                console.log('ServiceWorker registered:', registration);
+            })
+            .catch(error => {
+                console.log('ServiceWorker registration failed:', error);
+            });
+    });
+}
+
+// iOS standalone mode detection
+if (window.navigator.standalone) {
+    document.body.classList.add('ios-standalone');
+}
 
 // Add event listener for full deck filter checkbox
 document.addEventListener('DOMContentLoaded', () => {

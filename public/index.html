@@ -2,8 +2,20 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Card Recognition Trainer</title>
+    
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Card Trainer">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#1a1a1a">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,8 +34,11 @@
                 
                 <div id="start-screen" class="start-screen">
                     <h2>Przygotuj się!</h2>
-                    <p>Naciśnij <strong>SPACJĘ</strong> aby rozpocząć</p>
-                    <p class="instructions">Gdy pojawi się karta, rozpoznaj ją i naciśnij <strong>SPACJĘ</strong> aby przejść do następnej</p>
+                    <p class="mobile-instruction">Dotknij aby rozpocząć</p>
+                    <p class="desktop-instruction">Naciśnij <strong>SPACJĘ</strong> aby rozpocząć</p>
+                    <button id="start-tap-btn" class="tap-button">TAP TO START</button>
+                    <p class="instructions mobile-instruction">Gdy pojawi się karta, dotknij ekranu aby przejść do następnej</p>
+                    <p class="instructions desktop-instruction">Gdy pojawi się karta, naciśnij <strong>SPACJĘ</strong> aby przejść do następnej</p>
                 </div>
                 
                 <div id="finish-screen" class="finish-screen hidden">
