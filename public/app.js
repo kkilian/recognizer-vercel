@@ -69,31 +69,30 @@ class RecognitionTrainer {
             });
         });
         
-        // Start screen tap (either on overlay or TAP zone)
-        this.startScreen.addEventListener('touchend', e => {
-            e.preventDefault();
-            if (!this.sessionActive) {
-                this.startSession();
-                this.vibrate(10);
-            }
-        });
-        
-        // Tap zone - start game or next card
+        // Tap zone - only for next card during session
         this.tapZone.addEventListener('touchend', e => {
             e.preventDefault();
             
-            // If start screen is visible, start the game
-            if (!this.startScreen.classList.contains('hidden') && !this.sessionActive) {
-                this.startSession();
-                this.vibrate(10);
-            }
-            // Otherwise, if waiting for tap, go to next card
-            else if (this.waitingForTap) {
+            // Only handle tap if waiting for next card
+            if (this.waitingForTap) {
                 this.showTapFeedback();
                 this.nextCard();
                 this.vibrate(5);
             }
         });
+        
+        // Make the TAP button in start screen clickable
+        const tapStart = document.querySelector('.tap-start');
+        if (tapStart) {
+            tapStart.addEventListener('touchend', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!this.sessionActive) {
+                    this.startSession();
+                    this.vibrate(10);
+                }
+            });
+        }
         
         // Finish screen buttons
         document.getElementById('new-session-btn').addEventListener('touchend', e => {
@@ -132,6 +131,7 @@ class RecognitionTrainer {
         // Settings controls - start screen
         const startSlider = document.getElementById('start-cards-slider');
         const updateStartSlider = (e) => {
+            e.stopPropagation();
             this.cardCount = parseInt(e.target.value);
             document.getElementById('start-cards-count').textContent = this.cardCount;
             // Sync with settings
@@ -141,6 +141,9 @@ class RecognitionTrainer {
         };
         startSlider.addEventListener('input', updateStartSlider);
         startSlider.addEventListener('change', updateStartSlider);
+        // Prevent tap events from bubbling up
+        startSlider.addEventListener('touchstart', e => e.stopPropagation());
+        startSlider.addEventListener('touchend', e => e.stopPropagation());
         
         // Suit toggles - settings
         document.querySelectorAll('.suit-toggle').forEach(btn => {
@@ -180,7 +183,16 @@ class RecognitionTrainer {
                 this.updateSelectedSuits();
                 this.vibrate(5);
             });
+            // Also prevent touchstart from bubbling
+            btn.addEventListener('touchstart', e => e.stopPropagation());
         });
+        
+        // Prevent taps on quick settings from starting the game
+        const quickSettings = document.querySelector('.quick-settings');
+        if (quickSettings) {
+            quickSettings.addEventListener('touchstart', e => e.stopPropagation());
+            quickSettings.addEventListener('touchend', e => e.stopPropagation());
+        }
         
         // Switches
         document.getElementById('focus-mode-switch').addEventListener('change', e => {
