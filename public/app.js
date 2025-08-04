@@ -47,12 +47,17 @@ class RecognitionTrainer {
     }
     
     init() {
-        // Prevent default touch behaviors
+        // Prevent default touch behaviors (but allow sliders to work)
         document.addEventListener('touchstart', e => {
             if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
         
-        document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+        document.addEventListener('touchmove', e => {
+            // Allow touch move for input range elements
+            if (e.target.type !== 'range') {
+                e.preventDefault();
+            }
+        }, { passive: false });
         
         // Tab navigation
         document.querySelectorAll('.tab-item').forEach(tab => {
@@ -113,25 +118,29 @@ class RecognitionTrainer {
         
         // Settings controls - main settings
         const slider = document.getElementById('cards-slider');
-        slider.addEventListener('input', e => {
+        const updateMainSlider = (e) => {
             this.cardCount = parseInt(e.target.value);
             document.getElementById('cards-count').textContent = this.cardCount;
             // Sync with start screen
             document.getElementById('start-cards-slider').value = this.cardCount;
             document.getElementById('start-cards-count').textContent = this.cardCount;
             this.saveSettings();
-        });
+        };
+        slider.addEventListener('input', updateMainSlider);
+        slider.addEventListener('change', updateMainSlider);
         
         // Settings controls - start screen
         const startSlider = document.getElementById('start-cards-slider');
-        startSlider.addEventListener('input', e => {
+        const updateStartSlider = (e) => {
             this.cardCount = parseInt(e.target.value);
             document.getElementById('start-cards-count').textContent = this.cardCount;
             // Sync with settings
             document.getElementById('cards-slider').value = this.cardCount;
             document.getElementById('cards-count').textContent = this.cardCount;
             this.saveSettings();
-        });
+        };
+        startSlider.addEventListener('input', updateStartSlider);
+        startSlider.addEventListener('change', updateStartSlider);
         
         // Suit toggles - settings
         document.querySelectorAll('.suit-toggle').forEach(btn => {
