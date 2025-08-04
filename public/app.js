@@ -111,20 +111,63 @@ class RecognitionTrainer {
             this.vibrate(5);
         });
         
-        // Settings controls
+        // Settings controls - main settings
         const slider = document.getElementById('cards-slider');
         slider.addEventListener('input', e => {
             this.cardCount = parseInt(e.target.value);
             document.getElementById('cards-count').textContent = this.cardCount;
+            // Sync with start screen
+            document.getElementById('start-cards-slider').value = this.cardCount;
+            document.getElementById('start-cards-count').textContent = this.cardCount;
             this.saveSettings();
         });
         
-        // Suit toggles
+        // Settings controls - start screen
+        const startSlider = document.getElementById('start-cards-slider');
+        startSlider.addEventListener('input', e => {
+            this.cardCount = parseInt(e.target.value);
+            document.getElementById('start-cards-count').textContent = this.cardCount;
+            // Sync with settings
+            document.getElementById('cards-slider').value = this.cardCount;
+            document.getElementById('cards-count').textContent = this.cardCount;
+            this.saveSettings();
+        });
+        
+        // Suit toggles - settings
         document.querySelectorAll('.suit-toggle').forEach(btn => {
             btn.addEventListener('touchend', e => {
                 e.preventDefault();
                 e.stopPropagation();
                 btn.classList.toggle('active');
+                // Sync with start screen
+                const startBtn = document.querySelector(`.suit-quick[data-suit="${btn.dataset.suit}"]`);
+                if (startBtn) {
+                    if (btn.classList.contains('active')) {
+                        startBtn.classList.add('active');
+                    } else {
+                        startBtn.classList.remove('active');
+                    }
+                }
+                this.updateSelectedSuits();
+                this.vibrate(5);
+            });
+        });
+        
+        // Suit toggles - start screen
+        document.querySelectorAll('.suit-quick').forEach(btn => {
+            btn.addEventListener('touchend', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                btn.classList.toggle('active');
+                // Sync with settings
+                const settingsBtn = document.querySelector(`.suit-toggle[data-suit="${btn.dataset.suit}"]`);
+                if (settingsBtn) {
+                    if (btn.classList.contains('active')) {
+                        settingsBtn.classList.add('active');
+                    } else {
+                        settingsBtn.classList.remove('active');
+                    }
+                }
                 this.updateSelectedSuits();
                 this.vibrate(5);
             });
@@ -248,18 +291,27 @@ class RecognitionTrainer {
     
     updateSelectedSuits() {
         this.selectedSuits = [];
-        document.querySelectorAll('.suit-toggle.active').forEach(btn => {
-            this.selectedSuits.push(btn.dataset.suit);
+        // Check from either suit-toggle or suit-quick (both should be synced)
+        document.querySelectorAll('.suit-toggle.active, .suit-quick.active').forEach(btn => {
+            if (!this.selectedSuits.includes(btn.dataset.suit)) {
+                this.selectedSuits.push(btn.dataset.suit);
+            }
         });
         
-        // Update max cards
+        // Update max cards for both sliders
         const maxCards = this.selectedSuits.length * 13;
         const slider = document.getElementById('cards-slider');
+        const startSlider = document.getElementById('start-cards-slider');
+        
         slider.max = maxCards;
+        startSlider.max = maxCards;
+        
         if (this.cardCount > maxCards) {
             this.cardCount = maxCards;
             slider.value = maxCards;
+            startSlider.value = maxCards;
             document.getElementById('cards-count').textContent = maxCards;
+            document.getElementById('start-cards-count').textContent = maxCards;
         }
         
         this.saveSettings();
@@ -680,11 +732,25 @@ class RecognitionTrainer {
             this.focusMode = settings.focusMode || false;
             this.vibrationEnabled = settings.vibrationEnabled !== false;
             
-            // Update UI
+            // Update UI - settings
             document.getElementById('cards-slider').value = this.cardCount;
             document.getElementById('cards-count').textContent = this.cardCount;
             
+            // Update UI - start screen
+            document.getElementById('start-cards-slider').value = this.cardCount;
+            document.getElementById('start-cards-count').textContent = this.cardCount;
+            
+            // Update suit toggles - settings
             document.querySelectorAll('.suit-toggle').forEach(btn => {
+                if (this.selectedSuits.includes(btn.dataset.suit)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Update suit toggles - start screen
+            document.querySelectorAll('.suit-quick').forEach(btn => {
                 if (this.selectedSuits.includes(btn.dataset.suit)) {
                     btn.classList.add('active');
                 } else {

@@ -34,6 +34,22 @@
                     <!-- Start screen -->
                     <div id="start-screen" class="screen-overlay">
                         <h2>Przygotuj się!</h2>
+                        
+                        <!-- Quick settings on start screen -->
+                        <div class="quick-settings">
+                            <div class="quick-setting">
+                                <label>Liczba kart: <span id="start-cards-count">10</span></label>
+                                <input type="range" id="start-cards-slider" min="5" max="52" value="10">
+                            </div>
+                            
+                            <div class="quick-suits">
+                                <button class="suit-quick active" data-suit="♠">♠</button>
+                                <button class="suit-quick active" data-suit="♥">♥</button>
+                                <button class="suit-quick active" data-suit="♦">♦</button>
+                                <button class="suit-quick active" data-suit="♣">♣</button>
+                            </div>
+                        </div>
+                        
                         <div class="tap-start">
                             <div class="tap-icon">👇</div>
                             <p>Tap aby rozpocząć</p>
