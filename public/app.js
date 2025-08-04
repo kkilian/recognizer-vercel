@@ -64,7 +64,7 @@ class RecognitionTrainer {
             });
         });
         
-        // Start screen tap
+        // Start screen tap (either on overlay or TAP zone)
         this.startScreen.addEventListener('touchend', e => {
             e.preventDefault();
             if (!this.sessionActive) {
@@ -73,10 +73,17 @@ class RecognitionTrainer {
             }
         });
         
-        // Tap zone during session
+        // Tap zone - start game or next card
         this.tapZone.addEventListener('touchend', e => {
             e.preventDefault();
-            if (this.waitingForTap) {
+            
+            // If start screen is visible, start the game
+            if (!this.startScreen.classList.contains('hidden') && !this.sessionActive) {
+                this.startSession();
+                this.vibrate(10);
+            }
+            // Otherwise, if waiting for tap, go to next card
+            else if (this.waitingForTap) {
                 this.showTapFeedback();
                 this.nextCard();
                 this.vibrate(5);
